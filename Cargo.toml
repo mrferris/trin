@@ -20,4 +20,12 @@ trin-state = { path = "trin-state" }
 members = [
     "trin-history",
     "trin-state",
+    "ethportal-peertest"
+]
+
+default-members = [
+    "trin-state",
+    "trin-history",
+    "trin-core",
+    "ethportal-peertest"
 ]
