@@ -1,5 +1,7 @@
 use ethportal_peertest::cli::PeertestConfig;
+use ethportal_peertest::jsonrpc::{JsonRpcHandler, PortalEndpoint};
 use log::info;
+use tokio::sync::mpsc;
 use trin_core::portalnet::{
     protocol::{PortalnetConfig, PortalnetProtocol},
     Enr, U256,
@@ -17,8 +19,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         };
 
         let (p2p, events) = PortalnetProtocol::new(portal_config).await.unwrap();
+        let (_jsonrpc_tx, jsonrpc_rx) = mpsc::unbounded_channel::<PortalEndpoint>();
+
+        let rpc_handler = JsonRpcHandler {
+            discovery: p2p.discovery.clone(),
+            jsonrpc_rx,
+        };
 
         tokio::spawn(events.process_discv5_requests());
+        tokio::spawn(rpc_handler.process_jsonrpc_requests());
 
         let target_enrs: Vec<Enr> = peertest_config
             .target_nodes

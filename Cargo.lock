@@ -682,6 +682,7 @@ dependencies = [
  "discv5",
  "log 0.4.14",
  "rocksdb",
+ "serde_json",
  "structopt",
  "tokio",
  "tracing",

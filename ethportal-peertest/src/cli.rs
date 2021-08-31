@@ -3,6 +3,7 @@ use std::ffi::OsString;
 use structopt::StructOpt;
 
 const DEFAULT_LISTEN_PORT: &str = "9876";
+const DEFAULT_WEB3_IPC_PATH: &str = "/tmp/json-rpc-peertest.ipc";
 
 #[derive(StructOpt, Debug, PartialEq)]
 #[structopt(
@@ -18,6 +19,14 @@ pub struct PeertestConfig {
         help = "The UDP port to listen on."
     )]
     pub listen_port: u16,
+
+    #[structopt(
+        default_value(DEFAULT_WEB3_IPC_PATH),
+        short = "w3",
+        long = "web3_ipc_path",
+        help = "path to json-rpc socket address over IPC"
+    )]
+    pub web3_ipc_path: String,
 
     #[structopt(
         use_delimiter = true,
