@@ -46,11 +46,11 @@ pub fn launch_jsonrpc_server(
     match trin_config.web3_transport.as_str() {
         "ipc" => launch_ipc_client(
             pool,
-            infura_project_id,
+            Some(infura_project_id),
             &trin_config.web3_ipc_path,
             portal_tx,
         ),
-        "http" => launch_http_client(pool, infura_project_id, trin_config, portal_tx),
+        "http" => launch_http_client(pool, Some(infura_project_id), trin_config, portal_tx),
         val => panic!("Unsupported web3 transport: {}", val),
     }
 }
@@ -87,7 +87,7 @@ fn get_listener_result(ipc_path: &str) -> tokio::io::Result<uds_windows::UnixLis
 
 fn launch_ipc_client(
     pool: ThreadPool,
-    infura_project_id: String,
+    infura_project_id: Option<String>,
     ipc_path: &str,
     portal_tx: UnboundedSender<PortalEndpoint>,
 ) {
@@ -107,10 +107,10 @@ fn launch_ipc_client(
         let infura_project_id = infura_project_id.clone();
         let portal_tx = portal_tx.clone();
         pool.execute(move || {
-            let infura_url = get_infura_url(&infura_project_id);
+            let infura_url = get_infura_url(infura_project_id);
             let mut rx = stream.try_clone().unwrap();
             let mut tx = stream;
-            serve_ipc_client(&mut rx, &mut tx, &infura_url, portal_tx);
+            serve_ipc_client(&mut rx, &mut tx, infura_url, portal_tx);
         });
     }
     println!("Clean exit");
@@ -118,7 +118,7 @@ fn launch_ipc_client(
 
 fn launch_http_client(
     pool: ThreadPool,
-    infura_project_id: String,
+    infura_project_id: Option<String>,
     trin_config: TrinConfig,
     portal_tx: UnboundedSender<PortalEndpoint>,
 ) {
@@ -130,8 +130,8 @@ fn launch_http_client(
                 let infura_project_id = infura_project_id.clone();
                 let portal_tx = portal_tx.clone();
                 pool.execute(move || {
-                    let infura_url = get_infura_url(&infura_project_id);
-                    serve_http_client(stream, &infura_url, portal_tx);
+                    let infura_url = get_infura_url(infura_project_id);
+                    serve_http_client(stream, infura_url, portal_tx);
                 });
             }
             Err(e) => {
@@ -144,7 +144,7 @@ fn launch_http_client(
 fn serve_ipc_client(
     rx: &mut impl Read,
     tx: &mut impl Write,
-    infura_url: &str,
+    infura_url: Option<String>,
     portal_tx: UnboundedSender<PortalEndpoint>,
 ) {
     let deser = serde_json::Deserializer::from_reader(rx);
@@ -152,7 +152,7 @@ fn serve_ipc_client(
         let obj = obj.unwrap();
         let formatted_response = match obj.validate() {
             Ok(_) => {
-                let result = handle_request(obj, infura_url, portal_tx.clone());
+                let result = handle_request(obj, infura_url.clone(), portal_tx.clone());
                 match result {
                     Ok(contents) => contents.into_bytes(),
                     Err(contents) => contents.into_bytes(),
@@ -166,7 +166,7 @@ fn serve_ipc_client(
 
 fn serve_http_client(
     mut stream: TcpStream,
-    infura_url: &str,
+    infura_url: Option<String>,
     portal_tx: UnboundedSender<PortalEndpoint>,
 ) {
     let mut buffer = Vec::new();
@@ -177,7 +177,7 @@ fn serve_http_client(
     for obj in deser.into_iter::<JsonRequest>() {
         let obj = obj.unwrap();
         let formatted_response = match obj.validate() {
-            Ok(_) => process_http_request(obj, infura_url, portal_tx.clone()),
+            Ok(_) => process_http_request(obj, infura_url.clone(), portal_tx.clone()),
             Err(e) => format!("HTTP/1.1 400 BAD REQUEST\r\n\r\n{}", e).into_bytes(),
         };
         stream.write_all(&formatted_response).unwrap();
@@ -187,7 +187,7 @@ fn serve_http_client(
 
 fn process_http_request(
     obj: JsonRequest,
-    infura_url: &str,
+    infura_url: Option<String>,
     portal_tx: UnboundedSender<PortalEndpoint>,
 ) -> Vec<u8> {
     let result = handle_request(obj, infura_url, portal_tx);
@@ -209,7 +209,7 @@ fn process_http_request(
 
 fn handle_request(
     obj: JsonRequest,
-    infura_url: &str,
+    infura_url: Option<String>,
     portal_tx: UnboundedSender<PortalEndpoint>,
 ) -> Result<String, String> {
     // todo: figure out best way to refactor this parsing logic
@@ -224,7 +224,15 @@ fn handle_request(
         "test_historyNetwork" => dispatch_portal_request(obj, portal_tx),
         "test_stateNetwork" => dispatch_portal_request(obj, portal_tx),
         _ if obj.method.as_str().starts_with("discv5") => dispatch_portal_request(obj, portal_tx),
-        _ => dispatch_infura_request(obj, infura_url),
+        _ => match infura_url {
+            Some(url) => dispatch_infura_request(obj, &url),
+            None => Err(json!({
+                "jsonrpc": "2.0",
+                "id": obj.id,
+                "error": "Infura project id not provided!".to_string(),
+            })
+            .to_string()),
+        },
     }
 }
 
@@ -325,8 +333,8 @@ fn proxy_to_url(request: String, url: &str) -> io::Result<Vec<u8>> {
     }
 }
 
-fn get_infura_url(infura_project_id: &str) -> String {
-    return format!("https://mainnet.infura.io:443/v3/{}", infura_project_id);
+fn get_infura_url(infura_project_id: Option<String>) -> Option<String> {
+    infura_project_id.map(|id| format!("https://some.url.io:443/v3/{}", id))
 }
 
 #[cfg(test)]

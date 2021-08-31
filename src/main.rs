@@ -1,5 +1,3 @@
-use std::env;
-
 use log::info;
 use tokio::sync::mpsc;
 
@@ -9,6 +7,7 @@ use trin_core::portalnet::protocol::{
     HistoryNetworkEndpoint, JsonRpcHandler, PortalEndpoint, PortalnetConfig, PortalnetProtocol,
     StateNetworkEndpoint,
 };
+use trin_core::utils::get_infura_project_id;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -19,13 +18,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let trin_config = TrinConfig::new();
     trin_config.display_config();
 
-    let infura_project_id = match env::var("TRIN_INFURA_PROJECT_ID") {
-        Ok(val) => val,
-        Err(_) => panic!(
-            "Must supply Infura key as environment variable, like:\n\
-            TRIN_INFURA_PROJECT_ID=\"your-key-here\" trin"
-        ),
-    };
+    let infura_project_id = get_infura_project_id();
 
     let bootnode_enrs = trin_config
         .bootnodes

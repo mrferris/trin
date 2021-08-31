@@ -16,6 +16,16 @@ pub fn xor_two_values(first: &[u8], second: &[u8]) -> Vec<u8> {
         .collect()
 }
 
+pub fn get_infura_project_id() -> String {
+    match env::var("TRIN_INFURA_PROJECT_ID") {
+        Ok(val) => val,
+        Err(_) => panic!(
+            "Must supply Infura key as environment variable, like:\n\
+            TRIN_INFURA_PROJECT_ID=\"your-key-here\" trin"
+        ),
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
