@@ -52,6 +52,9 @@ pub enum PortalEndpointKind {
     DummyStateNetworkData,
     NodeInfo,
     RoutingTableInfo,
+    Ping,
+    FindNodes,
+    FindContent,
 }
 
 #[derive(Debug)]
@@ -123,6 +126,10 @@ impl JsonRpcHandler {
                         .collect();
                     let _ = cmd.resp.send(Ok(Value::Array(routing_table_info)));
                 }
+                //ToDo: Implement logic for those placeholders, similar to testing network jsonrpc handler
+                Ping => {}
+                FindNodes => {}
+                FindContent => {}
                 DummyHistoryNetworkData => {
                     let response = match self.history_tx.as_ref() {
                         Some(tx) => {

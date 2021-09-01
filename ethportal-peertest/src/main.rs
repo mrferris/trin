@@ -43,7 +43,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let (p2p, events) = PortalnetProtocol::new(portal_config).await.unwrap();
 
         let rpc_handler = JsonRpcHandler {
-            discovery: p2p.discovery.clone(),
+            p2p: p2p.clone(),
+            target_enr: target_enrs[0].clone(),
             jsonrpc_rx,
         };
 

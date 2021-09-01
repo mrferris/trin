@@ -229,7 +229,8 @@ fn handle_request(
             None => Err(json!({
                 "jsonrpc": "2.0",
                 "id": obj.id,
-                "error": "Infura project id not provided!".to_string(),
+                "error": "Must supply Infura key as environment variable, like:\n\
+            TRIN_INFURA_PROJECT_ID=\"your-key-here\"".to_string(),
             })
             .to_string()),
         },
@@ -263,6 +264,18 @@ fn dispatch_portal_request(
         },
         "discv5_routingTableInfo" => PortalEndpoint {
             kind: PortalEndpointKind::RoutingTableInfo,
+            resp: resp_tx,
+        },
+        "discv5_ping" => PortalEndpoint {
+            kind: PortalEndpointKind::Ping,
+            resp: resp_tx,
+        },
+        "discv5_findNodes" => PortalEndpoint {
+            kind: PortalEndpointKind::FindNodes,
+            resp: resp_tx,
+        },
+        "discv5_findContent" => PortalEndpoint {
+            kind: PortalEndpointKind::FindContent,
             resp: resp_tx,
         },
         // todo: remove test_historyNetwork & test_stateNetwork & replace with equivalent tests
