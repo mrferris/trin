@@ -1,21 +1,10 @@
 use serde_json::Value;
 use std::sync::Arc;
 use tokio::sync::mpsc;
-use trin_core::portalnet::discovery::Discovery;
-
-type Responder<T, E> = mpsc::UnboundedSender<Result<T, E>>;
-
-#[derive(Debug)]
-pub enum PortalEndpointKind {
-    NodeInfo,
-    RoutingTableInfo,
-}
-
-#[derive(Debug)]
-pub struct PortalEndpoint {
-    pub kind: PortalEndpointKind,
-    pub resp: Responder<Value, String>,
-}
+use trin_core::portalnet::{
+    discovery::Discovery,
+    protocol::{PortalEndpoint, PortalEndpointKind},
+};
 
 pub struct JsonRpcHandler {
     pub discovery: Arc<Discovery>,

@@ -684,6 +684,7 @@ dependencies = [
  "rocksdb",
  "serde_json",
  "structopt",
+ "threadpool",
  "tokio",
  "tracing",
  "tracing-subscriber",

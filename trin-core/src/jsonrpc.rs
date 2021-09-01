@@ -85,7 +85,7 @@ fn get_listener_result(ipc_path: &str) -> tokio::io::Result<uds_windows::UnixLis
     uds_windows::UnixListener::bind(ipc_path)
 }
 
-fn launch_ipc_client(
+pub fn launch_ipc_client(
     pool: ThreadPool,
     infura_project_id: Option<String>,
     ipc_path: &str,

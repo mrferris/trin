@@ -1,25 +1,46 @@
-use ethportal_peertest::cli::PeertestConfig;
-use ethportal_peertest::jsonrpc::{JsonRpcHandler, PortalEndpoint};
+use ethportal_peertest::{cli::PeertestConfig, jsonrpc::JsonRpcHandler};
 use log::info;
+use threadpool::ThreadPool;
 use tokio::sync::mpsc;
-use trin_core::portalnet::{
-    protocol::{PortalnetConfig, PortalnetProtocol},
-    Enr, U256,
+use trin_core::{
+    jsonrpc::launch_ipc_client,
+    portalnet::{
+        protocol::{PortalEndpoint, PortalnetConfig, PortalnetProtocol},
+        Enr, U256,
+    },
 };
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
-    tokio::spawn(async move {
-        let peertest_config = PeertestConfig::default();
-        let portal_config = PortalnetConfig {
-            listen_port: peertest_config.listen_port,
-            ..Default::default()
-        };
+    let peertest_config = PeertestConfig::default();
 
+    let pool = ThreadPool::new(2_usize);
+    let (jsonrpc_tx, jsonrpc_rx) = mpsc::unbounded_channel::<PortalEndpoint>();
+
+    let portal_config = PortalnetConfig {
+        listen_port: peertest_config.listen_port,
+        ..Default::default()
+    };
+
+    let target_enrs: Vec<Enr> = peertest_config
+        .target_nodes
+        .iter()
+        .map(|nodestr| nodestr.parse().unwrap())
+        .collect();
+
+    let web3_server_task = tokio::task::spawn_blocking(move || {
+        launch_ipc_client(
+            pool,
+            None,
+            peertest_config.web3_ipc_path.as_str(),
+            jsonrpc_tx,
+        );
+    });
+
+    tokio::spawn(async move {
         let (p2p, events) = PortalnetProtocol::new(portal_config).await.unwrap();
-        let (_jsonrpc_tx, jsonrpc_rx) = mpsc::unbounded_channel::<PortalEndpoint>();
 
         let rpc_handler = JsonRpcHandler {
             discovery: p2p.discovery.clone(),
@@ -28,12 +49,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         tokio::spawn(events.process_discv5_requests());
         tokio::spawn(rpc_handler.process_jsonrpc_requests());
-
-        let target_enrs: Vec<Enr> = peertest_config
-            .target_nodes
-            .iter()
-            .map(|nodestr| nodestr.parse().unwrap())
-            .collect();
 
         // Test Pong, Node and FoundContent on target nodes
         for enr in &target_enrs {
@@ -65,6 +80,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     })
     .await
     .unwrap();
+
+    web3_server_task.await.unwrap();
 
     Ok(())
 }
