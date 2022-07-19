@@ -10,7 +10,7 @@ repository = "https://github.com/ethereum/trin"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-discv5 = { git = "https://github.com/sigp/discv5.git", branch = "master" }
+discv5 = { path = "../../discv5" }
 ethereum-types = "0.12.1"
 hex = "0.4.3"
 log = "0.4.17"

@@ -921,7 +921,6 @@ dependencies = [
 [[package]]
 name = "discv5"
 version = "0.1.0-beta.14"
-source = "git+https://github.com/sigp/discv5.git?branch=master#e02821e75ad2babee934698d9073ee9813bc01ae"
 dependencies = [
  "aes",
  "aes-gcm",
@@ -936,6 +935,7 @@ dependencies = [
  "hkdf",
  "lazy_static 1.4.0",
  "lru",
+ "more-asserts",
  "parking_lot 0.11.2",
  "rand 0.8.5",
  "rlp 0.5.1",
@@ -2257,6 +2257,12 @@ dependencies = [
  "winapi 0.2.8",
  "ws2_32-sys",
 ]
+
+[[package]]
+name = "more-asserts"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7843ec2de400bcbc6a6328c958dc38e5359da6e93e72e37bc5246bf1ae776389"
 
 [[package]]
 name = "net2"
